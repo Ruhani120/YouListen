@@ -1,0 +1,81 @@
+services:
+  # ─────────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: youlisten-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: harmonysync
+      POSTGRES_USER: youlisten
+      POSTGRES_PASSWORD: youlisten_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U youlisten -d harmonysync"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - youlisten-net
+
+  # ─────────────────────────────────────────────
+  # Spring Boot Backend
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: youlisten-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: harmonysync
+      DB_USERNAME: youlisten
+      DB_PASSWORD: youlisten_dev
+      JWT_SECRET: youlisten-dev-jwt-secret-change-in-production-must-be-at-least-256-bits
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - youlisten-net
+
+  # ─────────────────────────────────────────────
+  # React Frontend
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    container_name: youlisten-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - youlisten-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  youlisten-net:
+    driver: bridge

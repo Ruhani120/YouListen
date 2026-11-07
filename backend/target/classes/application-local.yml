@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/harmonysync
+    username: youlisten
+    password: youlisten_dev
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.youlisten: DEBUG
+    org.springframework.security: DEBUG

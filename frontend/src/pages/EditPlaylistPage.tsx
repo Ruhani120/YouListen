@@ -1,23 +1,55 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
-import toast from 'react-hot-toast'
+import {
+  usePlaylist,
+  useUpdatePlaylist,
+  useDeletePlaylist,
+} from '../hooks/usePlaylists'
 
 export default function EditPlaylistPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const playlistId = Number(id)
 
-  const [name, setName] = useState('Synthwave & Cyberpunk Vibes')
-  const [description, setDescription] = useState(
-    'Retrofuturistic synthwave, darksynth and chill out electronic jams.'
-  )
-  const [isPublic, setIsPublic] = useState(true)
+  const { data: playlist, isLoading } = usePlaylist(playlistId)
+  const updatePlaylist = useUpdatePlaylist()
+  const deletePlaylist = useDeletePlaylist()
+
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
+
+  useEffect(() => {
+    if (playlist) {
+      setName(playlist.name)
+      setDescription(playlist.description ?? '')
+      setIsPublic(playlist.isPublic)
+    }
+  }, [playlist])
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Playlist details updated successfully!')
-    navigate(`/app/playlists/${id}`)
+    updatePlaylist.mutate(
+      { id: playlistId, name, description, isPublic },
+      { onSuccess: () => navigate(`/app/playlists/${id}`) }
+    )
+  }
+
+  const handleDelete = () => {
+    if (!window.confirm('Delete this playlist? This cannot be undone.')) return
+    deletePlaylist.mutate(playlistId, {
+      onSuccess: () => navigate('/app/playlists'),
+    })
+  }
+
+  if (isLoading) {
+    return <div className="text-sm text-text-muted">Loading playlist...</div>
+  }
+
+  if (!playlist) {
+    return <div className="text-sm text-text-muted">Playlist not found.</div>
   }
 
   return (
@@ -78,10 +110,7 @@ export default function EditPlaylistPage() {
         <div className="pt-4 border-t border-bg-border flex items-center justify-between">
           <button
             type="button"
-            onClick={() => {
-              toast.error('Delete playlist confirmed')
-              navigate('/app/playlists')
-            }}
+            onClick={handleDelete}
             className="text-xs text-accent-red hover:underline flex items-center gap-1"
           >
             <Trash2 size={14} />
@@ -90,6 +119,7 @@ export default function EditPlaylistPage() {
 
           <button
             type="submit"
+            disabled={updatePlaylist.isPending}
             className="btn-primary text-xs px-5 py-2 flex items-center gap-2"
           >
             <Save size={14} />

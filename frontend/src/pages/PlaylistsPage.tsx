@@ -1,73 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Grid, List, Music, UploadCloud } from 'lucide-react'
+import { Search, Grid, List, Music, UploadCloud } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import PlaylistCard from '../components/PlaylistCard'
 import EmptyState from '../components/EmptyState'
-import { usePlaylists, Playlist } from '../hooks/usePlaylists'
+import { usePlaylists } from '../hooks/usePlaylists'
 
 export default function PlaylistsPage() {
   const navigate = useNavigate()
-  const { data: playlists, isLoading } = usePlaylists()
+  const { data: playlists } = usePlaylists()
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  const defaultPlaylists: Playlist[] = [
-    {
-      id: 101,
-      name: 'Synthwave & Cyberpunk Vibes',
-      description: 'Retrofuturistic synthwave, darksynth and chill out electronic jams.',
-      coverUrl: null,
-      source: 'spotify',
-      trackCount: 42,
-      duration: '2h 15m',
-      isPublic: true,
-      isFavorite: true,
-      createdAt: '2026-03-01',
-      updatedAt: '2026-03-01',
-    },
-    {
-      id: 102,
-      name: 'Acoustic Morning Coffee',
-      description: 'Gentle acoustic guitar melodies, soft folk vocals and calm mornings.',
-      coverUrl: null,
-      source: 'spotify',
-      trackCount: 28,
-      duration: '1h 32m',
-      isPublic: false,
-      isFavorite: false,
-      createdAt: '2026-03-02',
-      updatedAt: '2026-03-02',
-    },
-    {
-      id: 103,
-      name: 'Late Night Coding Sessions',
-      description: 'Ambient techno and minimal beats for deep focused engineering work.',
-      coverUrl: null,
-      source: 'youtube',
-      trackCount: 65,
-      duration: '3h 48m',
-      isPublic: true,
-      isFavorite: true,
-      createdAt: '2026-03-03',
-      updatedAt: '2026-03-03',
-    },
-    {
-      id: 104,
-      name: 'Gym Workout High Energy',
-      description: 'Hard electro, phonk, and upbeat bass for intensive cardio.',
-      coverUrl: null,
-      source: 'spotify',
-      trackCount: 50,
-      duration: '2h 45m',
-      isPublic: false,
-      isFavorite: false,
-      createdAt: '2026-03-04',
-      updatedAt: '2026-03-04',
-    },
-  ]
-
-  const displayList = playlists && playlists.length > 0 ? playlists : defaultPlaylists
+  const displayList = playlists ?? []
   const filtered = displayList.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   )
@@ -129,8 +74,8 @@ export default function PlaylistsPage() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={<Music size={32} />}
-          title="No playlists found"
-          description="Try another search, or import a playlist."
+          title="No playlists yet"
+          description="Import a playlist to get started."
           action={
             <button
               onClick={() => navigate('/app/import')}

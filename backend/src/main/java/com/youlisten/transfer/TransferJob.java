@@ -42,6 +42,10 @@ public class TransferJob {
     @Column(name = "destination_playlist_name", length = 500)
     private String destinationPlaylistName;
 
+    @Column(name = "destination_privacy", nullable = false, length = 20)
+    @Builder.Default
+    private String destinationPrivacy = "private";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     @Builder.Default

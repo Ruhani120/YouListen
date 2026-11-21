@@ -23,9 +23,8 @@ export default function EditPlaylistPage() {
   return (
     <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
       <PageHeader
-        title="Edit Playlist Details"
-        description="Update playlist metadata, description, and visibility settings."
-        breadcrumb="Playlist Settings"
+        title="Edit playlist"
+        description="Name, description and visibility."
         actions={
           <button
             onClick={() => navigate(`/app/playlists/${id}`)}
@@ -72,7 +71,7 @@ export default function EditPlaylistPage() {
             type="checkbox"
             checked={isPublic}
             onChange={(e) => setIsPublic(e.target.checked)}
-            className="w-4 h-4 rounded text-accent-purple focus:ring-accent-purple"
+            className="w-4 h-4 rounded text-brand focus:ring-brand"
           />
         </div>
 

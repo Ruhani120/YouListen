@@ -10,7 +10,7 @@ interface StatCardProps {
   iconColor?: string
 }
 
-export default function StatCard({ title, value, icon, change, changeLabel, iconColor = 'text-accent-purple' }: StatCardProps) {
+export default function StatCard({ title, value, icon, change, changeLabel, iconColor = 'text-brand' }: StatCardProps) {
   const isPositive = change !== undefined && change >= 0
 
   return (

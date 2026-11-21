@@ -1,0 +1,15 @@
+# secrets
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# build output / dependencies
+node_modules/
+dist/
+target/
+.idea/
+*.log
+
+# AWS key pairs
+*.pem

@@ -16,4 +16,10 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
     List<Playlist> findByUserIdAndIsFavoriteOrderByCreatedAtDesc(Long userId, boolean isFavorite);
 
     long countByUserId(Long userId);
+
+    // Used by the Spotify import to avoid importing the same playlist twice
+    Optional<Playlist> findFirstByUserIdAndSourcePlatformAndSourcePlaylistId(
+            Long userId, String sourcePlatform, String sourcePlaylistId);
+
+    List<Playlist> findByUserIdAndSourcePlatform(Long userId, String sourcePlatform);
 }

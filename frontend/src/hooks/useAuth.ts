@@ -8,8 +8,17 @@ interface LoginPayload { email: string; password: string }
 interface RegisterPayload { displayName: string; username: string; email: string; password: string }
 
 interface AuthResponse {
-  user: { id: number; email: string; username: string; displayName: string | null; avatarUrl: string | null; role: string }
-  token: string
+  user: {
+    id: number
+    email: string
+    username: string
+    displayName: string | null
+    avatarUrl: string | null
+    role: string
+  }
+  accessToken: string
+  tokenType: string
+  expiresIn: number
 }
 
 export function useLogin() {
@@ -23,7 +32,7 @@ export function useLogin() {
       return data
     },
     onSuccess: (data) => {
-      setAuth(data.user, data.token)
+      setAuth(data.user, data.accessToken)
       qc.clear()
       toast.success(`Welcome back, ${data.user.displayName || data.user.username}!`)
       navigate('/app/dashboard')
@@ -45,7 +54,7 @@ export function useRegister() {
       return data
     },
     onSuccess: (data) => {
-      setAuth(data.user, data.token)
+      setAuth(data.user, data.accessToken)
       qc.clear()
       toast.success('Account created successfully!')
       navigate('/app/dashboard')

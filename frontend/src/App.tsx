@@ -12,6 +12,7 @@ import PlaylistsPage from './pages/PlaylistsPage'
 import PlaylistDetailPage from './pages/PlaylistDetailPage'
 import EditPlaylistPage from './pages/EditPlaylistPage'
 import SongMatchingPage from './pages/SongMatchingPage'
+import ToSpotifyPage from './pages/ToSpotifyPage'
 import TransferPage from './pages/TransferPage'
 import TransferProgressPage from './pages/TransferProgressPage'
 import TransferHistoryPage from './pages/TransferHistoryPage'
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="playlists/:id" element={<PlaylistDetailPage />} />
         <Route path="playlists/:id/edit" element={<EditPlaylistPage />} />
         <Route path="playlists/:id/match" element={<SongMatchingPage />} />
+        <Route path="playlists/:id/to-spotify" element={<ToSpotifyPage />} />
         <Route path="transfer/:playlistId" element={<TransferPage />} />
         <Route path="transfer/:jobId/progress" element={<TransferProgressPage />} />
         <Route path="transfers" element={<TransferHistoryPage />} />

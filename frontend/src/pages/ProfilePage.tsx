@@ -20,13 +20,12 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
       <PageHeader
-        title="User Profile"
-        description="Manage your personal account information and credentials."
+        title="Profile"
       />
 
       <div className="card space-y-6">
         <div className="flex items-center gap-4 pb-6 border-b border-bg-border">
-          <div className="w-16 h-16 rounded-2xl bg-accent-purple/20 border border-accent-purple/40 flex items-center justify-center text-xl font-bold text-accent-purple-light">
+          <div className="w-16 h-16 rounded-2xl bg-brand/20 border border-brand/40 flex items-center justify-center text-xl font-bold text-brand-light">
             {(displayName || username || 'U').slice(0, 2).toUpperCase()}
           </div>
           <div>

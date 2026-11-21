@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: harmonysync
       POSTGRES_USER: youlisten
-      POSTGRES_PASSWORD: youlisten_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -39,9 +39,23 @@ services:
       DB_PORT: 5432
       DB_NAME: harmonysync
       DB_USERNAME: youlisten
-      DB_PASSWORD: youlisten_dev
-      JWT_SECRET: youlisten-dev-jwt-secret-change-in-production-must-be-at-least-256-bits
-      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Local-only default. Set a real random JWT_SECRET in .env for any deployment.
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production-must-be-at-least-256-bits}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3001,http://127.0.0.1:5173,http://127.0.0.1:3001
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      # Encrypts the Spotify and Google tokens stored in the database (16+ characters)
+      SPOTIFY_TOKEN_ENCRYPTION_KEY: ${SPOTIFY_TOKEN_ENCRYPTION_KEY:-}
+      # ── Spotify OAuth ──
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-http://127.0.0.1:8080/api/spotify/callback}
+      # ── Google / YouTube ──
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8080/api/google/callback}
+      # Optional: lets song matching search YouTube without the user connecting Google first
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

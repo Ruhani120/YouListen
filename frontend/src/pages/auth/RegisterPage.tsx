@@ -37,23 +37,20 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-bg-primary flex flex-col justify-center items-center p-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent-purple/10 via-transparent to-transparent pointer-events-none" />
-
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2.5 mb-4 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-accent-purple to-accent-purple-light flex items-center justify-center shadow-lg shadow-accent-purple/30 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center group-hover:scale-105 transition-transform">
               <Music className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-accent-purple-light">
+            <span className="text-2xl font-black text-white">
               YouListen
             </span>
           </Link>
           <h1 className="text-2xl font-bold text-text-primary">Create an account</h1>
-          <p className="text-sm text-text-secondary mt-1">Get started with multi-platform playlist migration</p>
         </div>
 
-        <div className="card shadow-2xl border-bg-border/80">
+        <div className="card border-bg-border/80">
           {errorMessage && (
             <div className="mb-4 p-3 rounded-lg bg-accent-red/10 border border-accent-red/30 flex items-center gap-2 text-xs text-accent-red">
               <AlertCircle size={16} />
@@ -149,7 +146,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={registerMutation.isPending}
-              className="w-full btn-primary justify-center py-3 text-sm mt-3 shadow-lg shadow-accent-purple/20"
+              className="w-full btn-primary justify-center py-3 text-sm mt-3"
             >
               {registerMutation.isPending ? (
                 <span>Creating Account...</span>
@@ -164,7 +161,7 @@ export default function RegisterPage() {
 
           <div className="mt-5 pt-4 border-t border-bg-border text-xs text-text-muted flex items-center justify-between">
             <span>Already registered?</span>
-            <Link to="/login" className="text-accent-purple-light font-medium hover:underline">
+            <Link to="/login" className="text-brand-light font-medium hover:underline">
               Sign in instead
             </Link>
           </div>

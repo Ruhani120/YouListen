@@ -1,14 +1,49 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import SpotifyConnectSection from '../components/SpotifyConnectSection'
+import YouTubeImportSection from '../components/YouTubeImportSection'
+import { usePreviewImport } from '../hooks/useImports'
+import { getApiError } from '../hooks/useSpotify'
 import toast from 'react-hot-toast'
+
+// Result codes the backend puts on the redirect after Spotify login: /app/import?spotify=<code>
+const SPOTIFY_RESULT_MESSAGES: Record<string, { type: 'success' | 'error'; text: string }> = {
+  connected: { type: 'success', text: 'Spotify connected!' },
+  restricted: {
+    type: 'error',
+    text: 'Spotify connected, but Spotify is restricting API access for this app. In Development Mode the app owner needs active Premium. Your connection is saved.',
+  },
+  denied: { type: 'error', text: 'Spotify login was cancelled.' },
+  invalid_state: { type: 'error', text: 'Spotify login expired. Please try connecting again.' },
+  error: { type: 'error', text: 'Could not connect Spotify. Please try again.' },
+}
 
 export default function ImportPage() {
   const navigate = useNavigate()
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [importFormat, setImportFormat] = useState<'csv' | 'json'>('csv')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient = useQueryClient()
+  const previewImport = usePreviewImport()
+
+  // Handle the redirect back from Spotify (?spotify=connected | restricted | denied | ...)
+  useEffect(() => {
+    const result = searchParams.get('spotify')
+    if (!result) return
+    const message = SPOTIFY_RESULT_MESSAGES[result] ?? SPOTIFY_RESULT_MESSAGES.error
+    if (message.type === 'success') {
+      toast.success(message.text, { id: 'spotify-result' })
+    } else {
+      toast.error(message.text, { id: 'spotify-result', duration: 8000 })
+    }
+    queryClient.invalidateQueries({ queryKey: ['spotify'] })
+    setSearchParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -37,11 +72,16 @@ export default function ImportPage() {
   }
 
   const validateAndSetFile = (file: File) => {
-    const isCsv = file.name.endsWith('.csv')
-    const isJson = file.name.endsWith('.json')
+    const lower = file.name.toLowerCase()
+    const isCsv = lower.endsWith('.csv')
+    const isJson = lower.endsWith('.json')
 
     if (!isCsv && !isJson) {
       toast.error('Please upload a valid CSV or JSON file.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('That file is larger than 10 MB.')
       return
     }
 
@@ -55,13 +95,10 @@ export default function ImportPage() {
       toast.error('Please select a file to import')
       return
     }
-    // Navigate to preview page with simulated file state
-    navigate('/app/import/preview', {
-      state: {
-        fileName: selectedFile.name,
-        fileSize: selectedFile.size,
-        format: importFormat,
-      },
+    // The backend parses the file and returns what it found; nothing is saved until the preview is confirmed
+    previewImport.mutate(selectedFile, {
+      onSuccess: (preview) => navigate('/app/import/preview', { state: { preview } }),
+      onError: (err) => toast.error(getApiError(err, 'Could not read that file').message, { duration: 7000 }),
     })
   }
 
@@ -69,13 +106,25 @@ export default function ImportPage() {
     <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
       <PageHeader
         title="Import Playlist"
-        description="Upload your exported Spotify playlist in CSV or JSON format for deterministic matching and migration."
+        description="Bring in a playlist from Spotify, YouTube, or a CSV/JSON file."
       />
+
+      {/* Spotify OAuth: pick a real playlist from your account */}
+      <SpotifyConnectSection />
+
+      {/* YouTube / YouTube Music: bring a playlist in, then send it to Spotify */}
+      <YouTubeImportSection />
+
+      <div className="flex items-center gap-4 text-xs text-text-muted uppercase tracking-wider">
+        <div className="h-px flex-1 bg-bg-border" />
+        <span>or upload a file</span>
+        <div className="h-px flex-1 bg-bg-border" />
+      </div>
 
       {/* Format Selector */}
       <div className="card space-y-4">
         <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-          1. Select Export Format
+          File format
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
@@ -83,16 +132,16 @@ export default function ImportPage() {
             onClick={() => setImportFormat('csv')}
             className={`p-4 rounded-xl border text-left transition-all ${
               importFormat === 'csv'
-                ? 'bg-accent-purple/10 border-accent-purple text-white'
+                ? 'bg-brand/10 border-brand text-white'
                 : 'bg-bg-elevated border-bg-border text-text-secondary hover:text-white'
             }`}
           >
             <div className="font-bold text-sm mb-1 flex items-center justify-between">
-              <span>Spotify CSV Export</span>
-              {importFormat === 'csv' && <CheckCircle2 size={16} className="text-accent-purple-light" />}
+              <span>CSV</span>
+              {importFormat === 'csv' && <CheckCircle2 size={16} className="text-brand-light" />}
             </div>
             <p className="text-xs text-text-muted leading-relaxed">
-              Standard comma-separated format: Track Name, Artist Name, Album, Duration, ISRC.
+              Track name, artist, album and duration columns.
             </p>
           </button>
 
@@ -101,16 +150,16 @@ export default function ImportPage() {
             onClick={() => setImportFormat('json')}
             className={`p-4 rounded-xl border text-left transition-all ${
               importFormat === 'json'
-                ? 'bg-accent-purple/10 border-accent-purple text-white'
+                ? 'bg-brand/10 border-brand text-white'
                 : 'bg-bg-elevated border-bg-border text-text-secondary hover:text-white'
             }`}
           >
             <div className="font-bold text-sm mb-1 flex items-center justify-between">
-              <span>Spotify JSON Export</span>
-              {importFormat === 'json' && <CheckCircle2 size={16} className="text-accent-purple-light" />}
+              <span>JSON</span>
+              {importFormat === 'json' && <CheckCircle2 size={16} className="text-brand-light" />}
             </div>
             <p className="text-xs text-text-muted leading-relaxed">
-              Structured JSON format from tools like Exportify or Spotify Extended History.
+              Exportify or Spotify data exports.
             </p>
           </button>
         </div>
@@ -119,7 +168,7 @@ export default function ImportPage() {
       {/* Drop Zone */}
       <div className="card space-y-4">
         <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-          2. Upload Export File
+          Upload file
         </label>
         <div
           onDragEnter={handleDrag}
@@ -128,19 +177,19 @@ export default function ImportPage() {
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all ${
             dragActive
-              ? 'border-accent-purple bg-accent-purple/10 scale-[1.01]'
+              ? 'border-brand bg-brand/10 scale-[1.01]'
               : 'border-bg-border hover:border-text-muted bg-bg-elevated/40'
           }`}
         >
-          <div className="w-16 h-16 rounded-2xl bg-accent-purple/15 text-accent-purple-light flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-brand/15 text-brand-light flex items-center justify-center mx-auto mb-4">
             <UploadCloud size={32} />
           </div>
 
           <h3 className="text-base font-bold text-text-primary mb-1">
-            Drag and drop your playlist file here
+            Drop your playlist file here
           </h3>
           <p className="text-xs text-text-muted mb-6">
-            Supports .csv and .json files up to 10MB
+            .csv or .json, up to 10 MB
           </p>
 
           <input
@@ -189,10 +238,10 @@ export default function ImportPage() {
 
         <button
           onClick={handleProceed}
-          disabled={!selectedFile}
+          disabled={!selectedFile || previewImport.isPending}
           className="btn-primary text-xs px-6 py-2.5 flex items-center gap-2"
         >
-          <span>Preview & Parse Playlist</span>
+          <span>{previewImport.isPending ? 'Reading file...' : 'Preview & Parse Playlist'}</span>
           <ArrowRight size={14} />
         </button>
       </div>

@@ -76,7 +76,7 @@ export default function PlaylistsPage() {
     <div className="space-y-8 animate-fade-in">
       <PageHeader
         title="My Playlists"
-        description="Organize, inspect track listings, and transfer your multi-platform playlists."
+        description="Your imported and transferred playlists."
         actions={
           <div className="flex items-center gap-3">
             <button
@@ -107,7 +107,7 @@ export default function PlaylistsPage() {
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded-lg border text-text-secondary ${
-              viewMode === 'grid' ? 'bg-bg-elevated border-accent-purple text-white' : 'border-bg-border'
+              viewMode === 'grid' ? 'bg-bg-elevated border-brand text-white' : 'border-bg-border'
             }`}
             title="Grid view"
           >
@@ -116,7 +116,7 @@ export default function PlaylistsPage() {
           <button
             onClick={() => setViewMode('list')}
             className={`p-2 rounded-lg border text-text-secondary ${
-              viewMode === 'list' ? 'bg-bg-elevated border-accent-purple text-white' : 'border-bg-border'
+              viewMode === 'list' ? 'bg-bg-elevated border-brand text-white' : 'border-bg-border'
             }`}
             title="List view"
           >
@@ -130,7 +130,7 @@ export default function PlaylistsPage() {
         <EmptyState
           icon={<Music size={32} />}
           title="No playlists found"
-          description="Try a different search term or import your first Spotify playlist."
+          description="Try another search, or import a playlist."
           action={
             <button
               onClick={() => navigate('/app/import')}

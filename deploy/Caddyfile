@@ -1,0 +1,14 @@
+# Caddy gets and renews the HTTPS certificate for {$DOMAIN} by itself (Let's Encrypt).
+{$DOMAIN} {
+	encode gzip
+
+	# API calls (including the Spotify / Google sign-in callbacks) go to Spring Boot
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# everything else is the React app
+	handle {
+		reverse_proxy frontend:80
+	}
+}

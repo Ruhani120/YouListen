@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 const statusConfig: Record<StatusType, { label: string; className: string }> = {
   completed: { label: 'Completed', className: 'bg-accent-green/20 text-accent-green' },
   failed: { label: 'Failed', className: 'bg-accent-red/20 text-accent-red' },
-  in_progress: { label: 'In Progress', className: 'bg-accent-blue/20 text-accent-blue' },
+  in_progress: { label: 'In Progress', className: 'bg-brand/20 text-brand-light' },
   cancelled: { label: 'Cancelled', className: 'bg-text-muted/20 text-text-muted' },
   pending: { label: 'Pending', className: 'bg-accent-yellow/20 text-accent-yellow' },
   matched: { label: 'Matched', className: 'bg-accent-green/20 text-accent-green' },

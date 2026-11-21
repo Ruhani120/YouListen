@@ -1,131 +1,102 @@
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Music, ArrowRightLeft, CheckCircle, ListChecks } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
-import { Music, ArrowRightLeft, Sparkles, TrendingUp } from 'lucide-react'
+import { usePlaylists } from '../hooks/usePlaylists'
+import { useTransfers } from '../hooks/useTransfers'
+
+const tooltipStyle = { backgroundColor: '#1b1b1d', borderColor: '#2a2a2d', borderRadius: '8px' }
 
 export default function AnalyticsPage() {
-  const monthlyData = [
-    { month: 'Oct', transfers: 12, tracks: 340 },
-    { month: 'Nov', transfers: 19, tracks: 580 },
-    { month: 'Dec', transfers: 28, tracks: 890 },
-    { month: 'Jan', transfers: 35, tracks: 1100 },
-    { month: 'Feb', transfers: 42, tracks: 1420 },
-  ]
+  const { data: playlists } = usePlaylists()
+  const { data: transfers, isLoading } = useTransfers()
+  const jobs = transfers ?? []
 
-  const platformDistribution = [
-    { name: 'Spotify Exports', value: 68, color: '#10b981' },
-    { name: 'YouTube Destination', value: 24, color: '#ef4444' },
-    { name: 'Manual Curation', value: 8, color: '#8b5cf6' },
-  ]
+  const tracksTransferred = jobs.reduce((sum, t) => sum + t.transferredTracks, 0)
+  const completed = jobs.filter((t) => t.status === 'COMPLETED').length
+  const failed = jobs.filter((t) => t.status === 'FAILED').length
+  const successRate = completed + failed === 0 ? null : Math.round((completed / (completed + failed)) * 100)
 
-  const matchAccuracyTrends = [
-    { batch: 'B-1', score: 91 },
-    { batch: 'B-2', score: 94 },
-    { batch: 'B-3', score: 92 },
-    { batch: 'B-4', score: 96 },
-    { batch: 'B-5', score: 97.4 },
-  ]
+  // tracks transferred per month, last 6 months
+  const now = new Date()
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+    return { key: `${d.getFullYear()}-${d.getMonth()}`, month: d.toLocaleString(undefined, { month: 'short' }), tracks: 0 }
+  })
+  jobs.forEach((t) => {
+    const d = new Date(t.createdAt)
+    const bucket = months.find((m) => m.key === `${d.getFullYear()}-${d.getMonth()}`)
+    if (bucket) bucket.tracks += t.transferredTracks
+  })
+
+  const toYoutube = jobs.filter((t) => t.destinationPlatform !== 'spotify').length
+  const toSpotify = jobs.filter((t) => t.destinationPlatform === 'spotify').length
+  const destinations = [
+    { name: 'To YouTube', value: toYoutube, color: '#d62f33' },
+    { name: 'To Spotify', value: toSpotify, color: '#22c55e' },
+  ].filter((d) => d.value > 0)
 
   return (
     <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
-      <PageHeader
-        title="Migration & Library Analytics"
-        description="Quantitative insights on song matching accuracy, platform distribution, and transfer throughput."
-      />
+      <PageHeader title="Analytics" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard title="Tracks transferred" value={tracksTransferred} icon={<ArrowRightLeft size={20} />} iconColor="text-accent-green" />
+        <StatCard title="Transfers" value={jobs.length} icon={<ListChecks size={20} />} iconColor="text-brand-light" />
         <StatCard
-          title="Total Transferred"
-          value="1,420 Tracks"
-          icon={<ArrowRightLeft size={20} />}
-          change={18}
-          changeLabel="Tracks migrated"
+          title="Success rate"
+          value={successRate === null ? '-' : `${successRate}%`}
+          icon={<CheckCircle size={20} />}
           iconColor="text-accent-green"
         />
-        <StatCard
-          title="Average Accuracy"
-          value="97.4%"
-          icon={<Sparkles size={20} />}
-          change={2.4}
-          changeLabel="Deterministic ISRC match"
-          iconColor="text-accent-purple-light"
-        />
-        <StatCard
-          title="Total Playlists"
-          value="14"
-          icon={<Music size={20} />}
-          change={4}
-          changeLabel="Imported libraries"
-          iconColor="text-cyan-400"
-        />
-        <StatCard
-          title="Avg Job Latency"
-          value="34.2s"
-          icon={<TrendingUp size={20} />}
-          changeLabel="SQS worker duration"
-          iconColor="text-accent-yellow"
-        />
+        <StatCard title="Playlists" value={playlists?.length ?? 0} icon={<Music size={20} />} iconColor="text-brand-light" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Monthly Volume */}
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Monthly Migration Volume</h3>
-            <span className="text-xs text-text-muted">Tracks per month</span>
-          </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
-                <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1a1a24', borderColor: '#2a2a3a', borderRadius: '8px' }}
-                />
-                <Bar dataKey="tracks" fill="#7c3aed" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {!isLoading && jobs.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-sm text-text-secondary">Charts appear after your first transfer.</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="card space-y-4">
+            <h3 className="text-sm font-bold text-white">Tracks per month</h3>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={months}>
+                  <XAxis dataKey="month" stroke="#85858f" fontSize={11} />
+                  <YAxis stroke="#85858f" fontSize={11} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="tracks" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
-        {/* Match Accuracy Trend */}
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Match Confidence Trend (%)</h3>
-            <span className="text-xs text-text-muted">Last 5 batches</span>
-          </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={matchAccuracyTrends}>
-                <XAxis dataKey="batch" stroke="#64748b" fontSize={11} />
-                <YAxis domain={[80, 100]} stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1a1a24', borderColor: '#2a2a3a', borderRadius: '8px' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={{ fill: '#10b981', r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="card space-y-4">
+            <h3 className="text-sm font-bold text-white">Direction</h3>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={destinations} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
+                    {destinations.map((d) => (
+                      <Cell key={d.name} fill={d.color} stroke="none" />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex justify-center gap-6 text-xs text-text-secondary">
+              {destinations.map((d) => (
+                <span key={d.name} className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                  {d.name} ({d.value})
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

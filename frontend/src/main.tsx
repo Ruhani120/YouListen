@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Toaster
           position="top-right"
           toastOptions={{
-            style: { background: '#1a1a24', color: '#f8f8ff', border: '1px solid #2a2a3a' },
+            style: { background: '#1b1b1d', color: '#f8f8ff', border: '1px solid #2a2a2d' },
             success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
             error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
           }}

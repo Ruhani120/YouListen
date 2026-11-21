@@ -43,14 +43,21 @@ export default function PlaylistDetailPage() {
             </button>
             <button
               onClick={() => navigate(`/app/playlists/${id}/match`)}
-              className="btn-secondary text-xs flex items-center gap-1.5 text-accent-purple-light"
+              className="btn-secondary text-xs flex items-center gap-1.5 text-brand-light"
             >
               <Sparkles size={14} />
               <span>Review Matches</span>
             </button>
             <button
+              onClick={() => navigate(`/app/playlists/${id}/to-spotify`)}
+              className="btn-secondary text-xs flex items-center gap-1.5"
+            >
+              <ArrowRightLeft size={14} />
+              <span>Transfer to Spotify</span>
+            </button>
+            <button
               onClick={() => navigate(`/app/transfer/${id}`)}
-              className="btn-primary text-xs flex items-center gap-1.5 shadow-lg shadow-accent-purple/20"
+              className="btn-primary text-xs flex items-center gap-1.5"
             >
               <ArrowRightLeft size={14} />
               <span>Transfer to YouTube</span>
@@ -60,9 +67,9 @@ export default function PlaylistDetailPage() {
       />
 
       {/* Hero Overview */}
-      <div className="card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-bg-secondary via-bg-elevated/40 to-bg-secondary border-bg-border/80">
+      <div className="card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-accent-purple to-pink-600 flex items-center justify-center text-white shadow-xl">
+          <div className="w-20 h-20 rounded-2xl bg-brand flex items-center justify-center text-white">
             <Music size={32} />
           </div>
           <div>

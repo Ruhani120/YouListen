@@ -68,10 +68,10 @@ export default function AppLayout() {
         {/* Brand Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-bg-border">
           <NavLink to="/app/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-accent-purple to-accent-purple-light flex items-center justify-center shadow-lg shadow-accent-purple/20">
+            <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center">
               <Music className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-accent-purple-light">
+            <span className="text-lg font-bold text-white">
               YouListen
             </span>
           </NavLink>
@@ -101,11 +101,11 @@ export default function AppLayout() {
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-accent-purple/15 text-accent-purple-light border border-accent-purple/30'
+                          ? 'bg-brand/15 text-brand-light border border-brand/30'
                           : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
                       }`}
                     >
-                      <Icon size={18} className={isActive ? 'text-accent-purple-light' : 'text-text-muted'} />
+                      <Icon size={18} className={isActive ? 'text-brand-light' : 'text-text-muted'} />
                       <span>{item.label}</span>
                     </NavLink>
                   )
@@ -118,7 +118,7 @@ export default function AppLayout() {
         {/* User Card & Logout */}
         <div className="p-4 border-t border-bg-border bg-bg-secondary">
           <div className="flex items-center gap-3 px-2 py-2 mb-2">
-            <div className="w-9 h-9 rounded-full bg-accent-purple/20 border border-accent-purple/40 flex items-center justify-center text-sm font-bold text-accent-purple-light">
+            <div className="w-9 h-9 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center text-sm font-bold text-brand-light">
               {userInitials}
             </div>
             <div className="flex-1 min-w-0">
@@ -156,7 +156,7 @@ export default function AppLayout() {
               <input
                 type="text"
                 placeholder="Search playlists, tracks, artists..."
-                className="w-full bg-bg-elevated border border-bg-border rounded-lg pl-9 pr-4 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-purple"
+                className="w-full bg-bg-elevated border border-bg-border rounded-lg pl-9 pr-4 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-brand"
               />
             </div>
           </div>
@@ -168,7 +168,7 @@ export default function AppLayout() {
               title="Notifications"
             >
               <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent-purple" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand" />
             </button>
 
             <button

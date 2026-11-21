@@ -13,26 +13,26 @@ interface PlaylistCardProps {
   onFavoriteToggle?: () => void
 }
 
-const gradients = [
-  'from-purple-600 to-pink-600',
-  'from-blue-600 to-cyan-600',
-  'from-emerald-600 to-teal-600',
-  'from-orange-600 to-red-600',
-  'from-indigo-600 to-purple-600',
-  'from-rose-600 to-orange-600',
+const tones = [
+  'bg-red-950',
+  'bg-emerald-950',
+  'bg-zinc-800',
+  'bg-rose-950',
+  'bg-green-950',
+  'bg-stone-800',
 ]
 
 export default function PlaylistCard({
   id, name, trackCount, duration, source, coverUrl, isFavorite = false, onClick, onFavoriteToggle
 }: PlaylistCardProps) {
-  const gradient = gradients[id % gradients.length]
+  const tone = tones[id % tones.length]
 
   return (
     <div
       onClick={onClick}
-      className="bg-bg-secondary border border-bg-border rounded-xl overflow-hidden hover:border-accent-purple/50 transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-purple/10 group"
+      className="bg-bg-secondary border border-bg-border rounded-xl overflow-hidden hover:border-brand/50 transition-all duration-200 cursor-pointer hover:-translate-y-1 group"
     >
-      <div className={`relative h-36 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+      <div className={`relative h-36 ${tone} flex items-center justify-center`}>
         {coverUrl ? (
           <img src={coverUrl} alt={name} className="w-full h-full object-cover" />
         ) : (

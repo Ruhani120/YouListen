@@ -1,0 +1,85 @@
+# Production stack for one EC2 instance: Caddy (HTTPS) + React + Spring Boot.
+# The database is Amazon RDS, so there is no Postgres container here.
+# Run:  docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: youlisten-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env, e.g. youlisten.duckdns.org}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    mem_limit: 100m
+    networks:
+      - youlisten-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # The browser calls the API on the same https address (Caddy forwards /api to the backend)
+        VITE_API_BASE_URL: https://${DOMAIN:?Set DOMAIN in .env}
+    container_name: youlisten-frontend
+    restart: unless-stopped
+    mem_limit: 64m
+    networks:
+      - youlisten-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: youlisten-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # ── database (Amazon RDS) ──
+      DB_HOST: ${DB_HOST:?Set DB_HOST to the RDS endpoint in .env}
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-harmonysync}
+      DB_USERNAME: ${DB_USERNAME:-youlisten}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_SSLMODE: ${DB_SSLMODE:-require}
+      # ── security ──
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      SPOTIFY_TOKEN_ENCRYPTION_KEY: ${SPOTIFY_TOKEN_ENCRYPTION_KEY:?Set SPOTIFY_TOKEN_ENCRYPTION_KEY in .env}
+      CORS_ORIGINS: https://${DOMAIN}
+      FRONTEND_URL: https://${DOMAIN}
+      # ── Spotify ──
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: https://${DOMAIN}/api/spotify/callback
+      # ── Google / YouTube ──
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: https://${DOMAIN}/api/google/callback
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+    # JVM uses 75% of this (see backend/Dockerfile), about 500 MB
+    mem_limit: 700m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - youlisten-net
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  youlisten-net:
+    driver: bridge

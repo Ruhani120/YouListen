@@ -13,32 +13,7 @@ interface NotificationItem {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 1,
-      title: 'Transfer Completed',
-      message: 'Job #job-9021 successfully transferred 42 tracks to YouTube.',
-      type: 'transfer',
-      timestamp: '10 minutes ago',
-      isRead: false,
-    },
-    {
-      id: 2,
-      title: 'Deterministic Match Complete',
-      message: 'Spotify export "Discover Weekly" parsed and matched with 96% accuracy.',
-      type: 'matching',
-      timestamp: '2 hours ago',
-      isRead: false,
-    },
-    {
-      id: 3,
-      title: 'PostgreSQL Migration V6 Applied',
-      message: 'Database schema verified and synced successfully via Flyway.',
-      type: 'system',
-      timestamp: '1 day ago',
-      isRead: true,
-    },
-  ])
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
@@ -53,8 +28,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-8 animate-fade-in max-w-4xl mx-auto">
       <PageHeader
-        title="Notifications Center"
-        description="Real-time alerts, transfer job statuses, and system updates."
+        title="Notifications"
         actions={
           <div className="flex items-center gap-3">
             <button
@@ -86,10 +60,10 @@ export default function NotificationsPage() {
             <div
               key={n.id}
               className={`card p-4 flex items-start gap-4 transition-colors ${
-                n.isRead ? 'opacity-70 bg-bg-secondary/60' : 'bg-bg-secondary border-accent-purple/30'
+                n.isRead ? 'opacity-70 bg-bg-secondary/60' : 'bg-bg-secondary border-brand/30'
               }`}
             >
-              <div className="w-9 h-9 rounded-xl bg-accent-purple/15 text-accent-purple-light flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-9 h-9 rounded-xl bg-brand/15 text-brand-light flex items-center justify-center shrink-0 mt-0.5">
                 {n.type === 'transfer' ? (
                   <ArrowRightLeft size={16} />
                 ) : n.type === 'matching' ? (

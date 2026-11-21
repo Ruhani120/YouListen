@@ -21,7 +21,7 @@ export default function TrackRow({
     <tr
       onClick={onClick}
       className={`border-b border-bg-border/50 transition-colors hover:bg-bg-elevated/50 ${
-        selected ? 'bg-accent-purple/10' : ''
+        selected ? 'bg-brand/10' : ''
       } ${matchStatus === 'warning' ? 'bg-accent-yellow/5' : ''} ${onClick ? 'cursor-pointer' : ''}`}
     >
       {position !== undefined && (

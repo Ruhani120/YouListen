@@ -6,7 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -27,6 +31,47 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleBadRequestException(
             BadRequestException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(SpotifyApiException.class)
+    public ResponseEntity<Map<String, Object>> handleSpotifyApiException(
+            SpotifyApiException ex, HttpServletRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Spotify Error");
+        body.put("code", ex.getCode());
+        body.put("message", ex.getMessage());
+        body.put("timestamp", Instant.now().toString());
+        body.put("path", request.getRequestURI());
+        body.put("status", ex.getStatus().value());
+        return ResponseEntity.status(ex.getStatus()).body(body);
+    }
+
+    @ExceptionHandler(GoogleApiException.class)
+    public ResponseEntity<Map<String, Object>> handleGoogleApiException(
+            GoogleApiException ex, HttpServletRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", "Google Error");
+        body.put("code", ex.getCode());
+        body.put("message", ex.getMessage());
+        body.put("timestamp", Instant.now().toString());
+        body.put("path", request.getRequestURI());
+        body.put("status", ex.getStatus().value());
+        return ResponseEntity.status(ex.getStatus()).body(body);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleUploadTooLarge(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "File Too Large",
+                "That file is too large. The limit is 10 MB.", request.getRequestURI());
+    }
+
+    @ExceptionHandler({HttpMessageNotReadableException.class, MissingServletRequestPartException.class,
+            MissingServletRequestParameterException.class})
+    public ResponseEntity<Map<String, Object>> handleMalformedRequest(
+            Exception ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Bad Request",
+                "The request is missing data or is malformed.", request.getRequestURI());
     }
 
     @ExceptionHandler(BadCredentialsException.class)

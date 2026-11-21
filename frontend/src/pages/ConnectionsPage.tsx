@@ -1,127 +1,178 @@
-import { Radio, CheckCircle, ExternalLink, Shield } from 'lucide-react'
+import { useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { Radio, CheckCircle, AlertCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
 import PageHeader from '../components/PageHeader'
-import PlatformBadge from '../components/PlatformBadge'
+import GoogleConnectButton from '../components/GoogleConnectButton'
+import { useDisconnectGoogle, useGoogleStatus } from '../hooks/useGoogle'
+import { getApiError, useConnectSpotify, useSpotifyStatus } from '../hooks/useSpotify'
+
+// Result codes the backend puts on the redirect after Google sign-in: /app/connections?google=<code>
+const GOOGLE_RESULT_MESSAGES: Record<string, { type: 'success' | 'error'; text: string }> = {
+  connected: { type: 'success', text: 'Google account connected!' },
+  no_channel: {
+    type: 'error',
+    text: 'Google connected, but this account has no YouTube channel yet. Open youtube.com, create a channel, then try again.',
+  },
+  no_refresh: {
+    type: 'error',
+    text: 'Google did not give a long-lived login. Remove YouListen at myaccount.google.com/permissions, then connect again.',
+  },
+  scope_missing: {
+    type: 'error',
+    text: 'The YouTube permission was not granted. Connect again and tick the YouTube checkbox on Google\'s screen.',
+  },
+  denied: { type: 'error', text: 'Google sign-in was cancelled.' },
+  invalid_state: { type: 'error', text: 'Google sign-in expired. Please try connecting again.' },
+  error: { type: 'error', text: 'Could not connect Google. Please try again.' },
+}
+
+function ConnectedBadge({ connected }: { connected: boolean }) {
+  return connected ? (
+    <span className="badge bg-accent-green/20 text-accent-green flex items-center gap-1">
+      <CheckCircle size={12} />
+      <span>Connected</span>
+    </span>
+  ) : (
+    <span className="badge bg-bg-elevated text-text-muted">Not connected</span>
+  )
+}
 
 export default function ConnectionsPage() {
-  const platforms = [
-    {
-      id: 'spotify',
-      name: 'Spotify',
-      type: 'Source Platform' as const,
-      status: 'active' as const,
-      description: 'Primary import mechanism via user-exported JSON and CSV playlists. Fully offline-capable without API limits.',
-      authMethod: 'CSV / JSON Export Import (Default) & Optional OAuth 2.0',
-      connected: true,
-      account: 'Import Engine Active',
-    },
-    {
-      id: 'youtube',
-      name: 'YouTube / YouTube Music',
-      type: 'Destination Platform' as const,
-      status: 'ready' as const,
-      description: 'Official YouTube Data API v3 integration for playlist creation, item insertion, and sequence preservation.',
-      authMethod: 'Google OAuth 2.0 (read/write playlists)',
-      connected: false,
-      account: 'Configure in Phase 3',
-    },
-    {
-      id: 'apple_music',
-      name: 'Apple Music',
-      type: 'Connector Architecture' as const,
-      status: 'planned' as const,
-      description: 'Apple MusicKit API connector scheduled for multi-platform phase expansion.',
-      authMethod: 'MusicKit Developer Token',
-      connected: false,
-      account: 'Phase 4 Roadmap',
-    },
-    {
-      id: 'deezer',
-      name: 'Deezer',
-      type: 'Connector Architecture' as const,
-      status: 'planned' as const,
-      description: 'Public Deezer API connector for cross-platform song queries and playlist synchronization.',
-      authMethod: 'OAuth 2.0',
-      connected: false,
-      account: 'Phase 4 Roadmap',
-    },
-    {
-      id: 'tidal',
-      name: 'Tidal',
-      type: 'Connector Architecture' as const,
-      status: 'planned' as const,
-      description: 'High-fidelity audio platform connector using Tidal OpenAPI specifications.',
-      authMethod: 'OAuth 2.0',
-      connected: false,
-      account: 'Phase 4 Roadmap',
-    },
-  ]
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { data: google, isLoading: googleLoading, error: googleError, refetch: refetchGoogle } = useGoogleStatus()
+  const { data: spotify } = useSpotifyStatus()
+  const disconnectGoogle = useDisconnectGoogle()
+  const connectSpotify = useConnectSpotify()
+
+  // Handle the redirect back from Google (?google=connected | no_channel | ...)
+  useEffect(() => {
+    const result = searchParams.get('google')
+    if (!result) return
+    const message = GOOGLE_RESULT_MESSAGES[result] ?? GOOGLE_RESULT_MESSAGES.error
+    if (message.type === 'success') {
+      toast.success(message.text, { id: 'google-result' })
+    } else {
+      toast.error(message.text, { id: 'google-result', duration: 9000 })
+    }
+    queryClient.invalidateQueries({ queryKey: ['google'] })
+    setSearchParams({}, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const spotifyStatusText = spotify?.connected
+    ? spotify.displayName ? `Connected as ${spotify.displayName}` : 'Account connected'
+    : 'Not connected'
+  const youtubeStatusText = google?.connected
+    ? google.channelTitle ? `Connected as ${google.channelTitle}` : 'Account connected'
+    : 'Not connected'
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <PageHeader
-        title="Music Platform Connections"
-        description="Manage connected music services, OAuth tokens, and connector architecture status."
-      />
+      <PageHeader title="Connections" description="Your Spotify and YouTube accounts." />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {platforms.map((p) => (
-          <div key={p.id} className="card flex flex-col justify-between space-y-4">
-            <div>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-bg-elevated flex items-center justify-center">
-                    <Radio size={20} className="text-accent-purple-light" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-text-primary">{p.name}</h3>
-                    <span className="text-xs text-text-muted">{p.type}</span>
-                  </div>
+        {/* Spotify */}
+        <div className="card flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-bg-elevated flex items-center justify-center">
+                  <Radio size={20} className="text-accent-green" />
                 </div>
-                {p.connected ? (
-                  <span className="badge bg-accent-green/20 text-accent-green flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    <span>Connected</span>
-                  </span>
-                ) : (
-                  <span className="badge bg-bg-elevated text-text-muted">
-                    {p.status === 'ready' ? 'Ready to Authorize' : 'Future Phase'}
-                  </span>
-                )}
+                <h3 className="text-base font-bold text-text-primary">Spotify</h3>
               </div>
-
-              <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                {p.description}
-              </p>
-
-              <div className="bg-bg-elevated/60 rounded-lg p-3 text-xs space-y-1.5 border border-bg-border/60">
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Mechanism:</span>
-                  <span className="text-text-primary font-medium">{p.authMethod}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Status:</span>
-                  <span className="text-text-primary">{p.account}</span>
-                </div>
-              </div>
+              <ConnectedBadge connected={!!spotify?.connected} />
             </div>
-
-            <div className="pt-2">
-              {p.id === 'spotify' ? (
-                <button className="w-full btn-secondary text-xs py-2 justify-center">
-                  <span>Import Engine Configured</span>
-                </button>
-              ) : p.id === 'youtube' ? (
-                <button className="w-full btn-primary text-xs py-2 justify-center">
-                  <span>Connect Google Account</span>
-                </button>
-              ) : (
-                <button disabled className="w-full btn-ghost text-xs py-2 justify-center opacity-50 cursor-not-allowed">
-                  <span>Roadmap Phase 4</span>
-                </button>
-              )}
-            </div>
+            <p className="text-xs text-text-secondary">Import your playlists, or create new ones from YouTube.</p>
+            <p className="text-xs text-text-muted">{spotifyStatusText}</p>
           </div>
-        ))}
+
+          <div className="space-y-2">
+            <button onClick={() => navigate('/app/import')} className="w-full btn-secondary text-xs py-2 justify-center">
+              <span>Import a playlist</span>
+            </button>
+            {spotify?.configured && (!spotify.connected || !spotify.canCreatePlaylists) && (
+              <button
+                onClick={() =>
+                  connectSpotify.mutate(undefined, {
+                    onError: (err) => toast.error(getApiError(err, 'Could not start Spotify login').message),
+                  })
+                }
+                disabled={connectSpotify.isPending}
+                className="w-full btn-primary text-xs py-2 justify-center"
+              >
+                <span>
+                  {connectSpotify.isPending
+                    ? 'Redirecting to Spotify...'
+                    : spotify.connected ? 'Reconnect to allow creating playlists' : 'Connect Spotify'}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* YouTube */}
+        <div className="card flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-bg-elevated flex items-center justify-center">
+                  <Radio size={20} className="text-brand-light" />
+                </div>
+                <h3 className="text-base font-bold text-text-primary">YouTube / YouTube Music</h3>
+              </div>
+              <ConnectedBadge connected={!!google?.connected} />
+            </div>
+            <p className="text-xs text-text-secondary">Find songs, import your playlists, and create new ones.</p>
+            <p className="text-xs text-text-muted">{youtubeStatusText}</p>
+          </div>
+
+          <div className="space-y-2">
+            {googleLoading && <div className="h-9 rounded-lg bg-bg-elevated animate-pulse-soft" />}
+
+            {googleError && (
+              <div className="p-3 rounded-lg bg-accent-red/10 border border-accent-red/30 text-xs text-text-secondary flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2">
+                  <AlertCircle size={14} className="text-accent-red shrink-0" />
+                  Could not load Google status.
+                </span>
+                <button onClick={() => refetchGoogle()} className="btn-secondary text-xs px-3 py-1">
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {google && !google.configured && (
+              <div className="p-3 rounded-lg bg-accent-yellow/10 border border-accent-yellow/30 text-xs text-text-secondary flex gap-2">
+                <AlertCircle size={14} className="text-accent-yellow shrink-0 mt-0.5" />
+                <span>Google login isn&apos;t set up on this server yet.</span>
+              </div>
+            )}
+
+            {google && google.configured && !google.connected && (
+              <GoogleConnectButton className="w-full btn-primary text-xs py-2" />
+            )}
+
+            {google?.connected && (
+              <button
+                onClick={() =>
+                  disconnectGoogle.mutate(undefined, {
+                    onSuccess: () => toast.success('Google disconnected'),
+                    onError: () => toast.error('Could not disconnect Google'),
+                  })
+                }
+                disabled={disconnectGoogle.isPending}
+                className="w-full btn-secondary text-xs py-2 justify-center"
+              >
+                <span>{disconnectGoogle.isPending ? 'Disconnecting...' : 'Disconnect'}</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

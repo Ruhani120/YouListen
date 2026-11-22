@@ -17,9 +17,11 @@ import java.util.List;
 
 /**
  * Executes a transfer job on a background thread:
- * create the YouTube playlist, then add the confirmed videos one by one, saving progress after every track
+ * create the YouTube playlist, then add the confirmed videos one by one, saving
+ * progress after every track
  * so the UI can poll it and so a stopped job can be resumed.
- * Works only with ids and plain values (no lazy entities), because there is no web session on this thread.
+ * Works only with ids and plain values (no lazy entities), because there is no
+ * web session on this thread.
  */
 @Component
 @RequiredArgsConstructor
@@ -35,12 +37,14 @@ public class TransferRunner {
     private final YouTubeApiClient youTube;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final TransferEventPublisher events;
 
     @Async("jobExecutor")
     public void run(Long jobId) {
         Long userId = null;
         try {
-            if (jobRepository.transition(jobId, TransferJob.Status.PENDING, TransferJob.Status.IN_PROGRESS, now()) == 0) {
+            if (jobRepository.transition(jobId, TransferJob.Status.PENDING, TransferJob.Status.IN_PROGRESS,
+                    now()) == 0) {
                 log.info("Transfer {} was not PENDING, not starting", jobId);
                 return;
             }
@@ -50,6 +54,7 @@ public class TransferRunner {
             log.error("Transfer {} crashed", jobId, t);
             jobRepository.finish(jobId, TransferJob.Status.IN_PROGRESS, TransferJob.Status.FAILED,
                     "Unexpected error. Check the server log, then try Resume.", now());
+            publishEvent(jobId);
             notifyUser(userId, Notification.Type.ERROR, "Transfer stopped",
                     "Something went wrong during the transfer. You can resume it from Transfer History.");
         }
@@ -90,7 +95,7 @@ public class TransferRunner {
                 consecutiveForbidden = 0;
             } catch (GoogleApiException e) {
                 if (e.getReason() == Reason.DUPLICATE) {
-                    markTransferred(jobId, item.id());      // already there (e.g. after a resume)
+                    markTransferred(jobId, item.id()); // already there (e.g. after a resume)
                 } else if (e.isFatalForJob()) {
                     stopReason = e.getMessage();
                     break;
@@ -103,7 +108,7 @@ public class TransferRunner {
                     }
                 }
             }
-            sleepQuietly(250);      // gentle pacing
+            sleepQuietly(250); // gentle pacing
         }
 
         // 3. finish
@@ -115,12 +120,15 @@ public class TransferRunner {
         if (done.getTransferredTracks() == 0 && !items.isEmpty()) {
             jobRepository.finish(jobId, TransferJob.Status.IN_PROGRESS, TransferJob.Status.FAILED,
                     "None of the tracks could be added to YouTube.", now());
+            publishEvent(jobId);
             notifyUser(userId, Notification.Type.ERROR, "Transfer failed",
                     "No tracks could be added to \"" + title + "\".");
             return;
         }
         String note = done.getFailedTracks() > 0 ? done.getFailedTracks() + " track(s) could not be added." : null;
-        if (jobRepository.finish(jobId, TransferJob.Status.IN_PROGRESS, TransferJob.Status.COMPLETED, note, now()) > 0) {
+        if (jobRepository.finish(jobId, TransferJob.Status.IN_PROGRESS, TransferJob.Status.COMPLETED, note,
+                now()) > 0) {
+            publishEvent(jobId);
             notifyUser(userId, Notification.Type.SUCCESS, "Transfer complete",
                     done.getTransferredTracks() + " tracks added to \"" + title + "\" on YouTube.");
         }
@@ -133,9 +141,13 @@ public class TransferRunner {
         jobRepository.incrementProgress(jobId, 1, 0, now());
     }
 
-    /** A "stop the whole job" problem (quota, expired login). Progress so far is kept and the job can be resumed. */
+    /**
+     * A "stop the whole job" problem (quota, expired login). Progress so far is
+     * kept and the job can be resumed.
+     */
     private void stop(Long jobId, Long userId, String message) {
         jobRepository.finish(jobId, TransferJob.Status.IN_PROGRESS, TransferJob.Status.FAILED, message, now());
+        publishEvent(jobId);
         notifyUser(userId, Notification.Type.WARNING, "Transfer paused", message);
     }
 
@@ -182,6 +194,19 @@ public class TransferRunner {
                     .build());
         } catch (RuntimeException e) {
             log.warn("Could not save notification: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Sends a small "transfer finished" event to SQS. Never throws, so it can't
+     * break a transfer.
+     */
+    private void publishEvent(Long jobId) {
+        try {
+            jobRepository.findById(jobId).ifPresent(j -> events.publish(
+                    j.getId(), j.getStatus().name(), j.getTransferredTracks(), j.getFailedTracks()));
+        } catch (RuntimeException e) {
+            log.warn("Could not publish transfer event: {}", e.getMessage());
         }
     }
 

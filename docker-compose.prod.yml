@@ -43,6 +43,10 @@ services:
     container_name: youlisten-backend
     restart: unless-stopped
     environment:
+
+          # ── AWS (transfer events go to SQS) ──
+      TRANSFER_EVENTS_QUEUE_URL: ${TRANSFER_EVENTS_QUEUE_URL:-}
+      AWS_REGION: ap-southeast-2
       SPRING_PROFILES_ACTIVE: prod
       # ── database (Amazon RDS) ──
       DB_HOST: ${DB_HOST:?Set DB_HOST to the RDS endpoint in .env}
